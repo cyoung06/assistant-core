@@ -1,5 +1,5 @@
 //! The structure every editor styles: ranges and hidden syntax in UTF-16 units.
-use assistant_core::{Element, Span, TextRange, markdown_spans};
+use assistant_core::{Alignment, Element, Span, TextRange, markdown_spans};
 
 fn r(from: u32, to: u32) -> TextRange {
     TextRange { from, to }
@@ -64,8 +64,8 @@ fn lists_tasks_quotes_rules_code_tables() {
             (Element::Task { checked: false }, vec!["- [ ]".into()]),
             (Element::Quote, vec!["> ".into(), "> ".into()]),
             (Element::Rule, vec![]),
-            (Element::CodeBlock { language: "rust".into() }, vec!["```rust".into(), "```".into()]),
-            (Element::Table, vec![]),
+            (Element::CodeBlock { language: "rust".into(), code: "fn x() {}\n".into() }, vec!["```rust".into(), "```".into()]),
+            (Element::Table { rows: vec![vec!["a".into(), "b".into()], vec!["1".into(), "2".into()]], alignments: vec![Alignment::Left, Alignment::Left] }, vec![]),
         ]
     );
 }
@@ -73,4 +73,13 @@ fn lists_tasks_quotes_rules_code_tables() {
 #[test]
 fn setext_headings_hide_their_underline() {
     assert_eq!(spans("제목\n===\n"), vec![(Element::Heading { level: 1 }, "제목\n===".into(), vec!["===".into()])]);
+}
+
+#[test]
+fn table_cells_keep_their_markdown_and_alignment() {
+    let s = markdown_spans("| **굵게** | 오른쪽 |\n|:-:|--:|\n| `x` | $y$ |\n".into());
+    assert_eq!(
+        s[0].element,
+        Element::Table { rows: vec![vec!["**굵게**".into(), "오른쪽".into()], vec!["`x`".into(), "$y$".into()]], alignments: vec![Alignment::Center, Alignment::Right] }
+    );
 }

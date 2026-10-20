@@ -25,10 +25,20 @@ pub enum Element {
     Quote,
     /// A thematic break: shown as a line when not being edited.
     Rule,
-    /// Fenced or indented code; its fences are its marks (shown small, not hidden).
-    CodeBlock { language: String },
-    /// A GFM table: shown as a table when not being edited.
-    Table,
+    /// Fenced or indented code ([code] is what's in it); its fences are its marks (shown small, not
+    /// hidden). A `mermaid` block is shown as its diagram when not being edited.
+    CodeBlock { language: String, code: String },
+    /// A GFM table: shown as a table when not being edited. [rows] are its cells' Markdown (the
+    /// first row is the header), [alignments] each column's.
+    Table { rows: Vec<Vec<String>>, alignments: Vec<Alignment> },
+}
+
+/// How a table column's cells are aligned.
+#[derive(Debug, Clone, Copy, PartialEq, uniffi::Enum)]
+pub enum Alignment {
+    Left,
+    Center,
+    Right,
 }
 
 /// A range of the note in UTF-16 code units (what Android, macOS and the web index strings by).
@@ -189,6 +199,7 @@ fn span<'a>(node: &'a AstNode<'a>, text: &str, at: &Offsets) -> Option<Span> {
         NodeValue::ThematicBreak => whole(Element::Rule),
         NodeValue::CodeBlock(c) => {
             let language = c.info.split_whitespace().next().unwrap_or("").to_string();
+            let code = c.literal.clone();
             let mut marks = Vec::new();
             if c.fenced {
                 let first_end = text[from..to].find('\n').map_or(to, |i| from + i);
@@ -200,9 +211,21 @@ fn span<'a>(node: &'a AstNode<'a>, text: &str, at: &Offsets) -> Option<Span> {
                     }
                 }
             }
-            Some(Span { element: Element::CodeBlock { language }, range: at.range(from, to), marks })
+            Some(Span { element: Element::CodeBlock { language, code }, range: at.range(from, to), marks })
         }
-        NodeValue::Table(_) => whole(Element::Table),
+        NodeValue::Table(t) => {
+            let alignments = t.alignments.iter().map(|a| match a {
+                comrak::nodes::TableAlignment::Center => Alignment::Center,
+                comrak::nodes::TableAlignment::Right => Alignment::Right,
+                _ => Alignment::Left,
+            }).collect();
+            // Each cell's Markdown as written (so it's styled by the same rules as the text).
+            let rows = node.children().map(|row| row.children().map(|cell| {
+                let (a, b) = children(cell, text, at).unwrap_or((0, 0));
+                if b > a { text[a..b].trim().to_string() } else { String::new() }
+            }).collect()).collect();
+            whole(Element::Table { rows, alignments })
+        }
         _ => None,
     }
 }

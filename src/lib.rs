@@ -6,6 +6,7 @@ uniffi::setup_scaffolding!();
 
 mod diagram;
 mod drawing;
+mod editing;
 mod fonts;
 mod markdown;
 mod math;
@@ -13,8 +14,9 @@ mod style;
 
 pub use diagram::render_mermaid;
 pub use drawing::{Drawing, Shape};
+pub use editing::{Edit, Replacement, SlashItem, link_path, pasted_name, relative_link, slash_items, toggle_wrap};
 pub use fonts::register_font;
-pub use markdown::{Element, Span, TextRange, markdown_spans};
+pub use markdown::{Alignment, Element, Span, TextRange, markdown_spans};
 pub use math::render_math;
 pub use style::{NoteStyle, note_style};
 
