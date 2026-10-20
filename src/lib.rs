@@ -9,12 +9,14 @@ mod drawing;
 mod fonts;
 mod markdown;
 mod math;
+mod style;
 
 pub use diagram::render_mermaid;
 pub use drawing::{Drawing, Shape};
 pub use fonts::register_font;
 pub use markdown::{Element, Span, TextRange, markdown_spans};
 pub use math::render_math;
+pub use style::{NoteStyle, note_style};
 
 #[derive(Debug, thiserror::Error, uniffi::Error)]
 pub enum RenderError {
