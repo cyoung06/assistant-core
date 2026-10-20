@@ -19,6 +19,7 @@ ratex-types = "0.1.15"
 ratex-katex-fonts = "0.1.15"
 # Vendored (MIT) with one change: fonts supplied by the app instead of the system's (see vendor/README.md).
 mermaid-rs-renderer = { path = "vendor/mermaid-rs-renderer", default-features = false }
+comrak = { version = "0.56", default-features = false }
 
 [[bin]]
 name = "uniffi-bindgen"

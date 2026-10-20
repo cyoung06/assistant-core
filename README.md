@@ -9,6 +9,8 @@ fonts a machine happens to have.
 - `register_font(bytes)`: the app's text fonts (Pretendard), before drawing.
 - `render_math(tex, display, font_size, color)` → `Drawing`
 - `render_mermaid(source, dark)` → `Drawing`
+- `markdown_spans(text)` → the note's structure (CommonMark, GFM, $…$ math) as spans, each with the
+  Markdown syntax an editor hides while the cursor isn't in it; offsets are UTF-16 units.
 
 A `Drawing` is a size, a baseline and shapes: paths (move, line, quadratic, cubic, close) filled
 or stroked in one ARGB colour.

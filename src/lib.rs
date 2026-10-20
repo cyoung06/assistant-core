@@ -7,11 +7,13 @@ uniffi::setup_scaffolding!();
 mod diagram;
 mod drawing;
 mod fonts;
+mod markdown;
 mod math;
 
 pub use diagram::render_mermaid;
 pub use drawing::{Drawing, Shape};
 pub use fonts::register_font;
+pub use markdown::{Element, Span, TextRange, markdown_spans};
 pub use math::render_math;
 
 #[derive(Debug, thiserror::Error, uniffi::Error)]
