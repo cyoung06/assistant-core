@@ -27,6 +27,10 @@ percent-encoding = "2"
 name = "uniffi-bindgen"
 path = "uniffi-bindgen.rs"
 
+# Development builds (tests, and the one bindings are generated from) without debug info: it's most of their size.
+[profile.dev]
+debug = false
+
 [profile.release]
 opt-level = "z"
 lto = true
