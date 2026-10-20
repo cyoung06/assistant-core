@@ -10,6 +10,9 @@ pub fn render_mermaid(source: String, dark: bool) -> Result<Drawing, RenderError
     let family = fonts::text_family().ok_or_else(|| RenderError::Invalid("no font registered".into()))?;
     let mut options = RenderOptions { theme: if dark { Theme::dark() } else { Theme::modern() }, ..RenderOptions::default() };
     options.theme.font_family = family.clone();
+    // On the note's own background (the theme's would be a box around it); it's also what gaps
+    // between parts (a pie's slices) are drawn in.
+    options.theme.background = format!("#{:06x}", crate::note_style(dark).background & 0xffffff);
     let svg = mermaid_rs_renderer::render_with_options(&source, options).map_err(|e| RenderError::Invalid(e.to_string()))?;
     let svg_options = usvg::Options { font_family: family, fontdb: fonts::database(), ..usvg::Options::default() };
     let tree = usvg::Tree::from_str(&svg, &svg_options).map_err(|e| RenderError::Invalid(e.to_string()))?;
