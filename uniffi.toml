@@ -1,0 +1,6 @@
+# Package names of the generated bindings, in each app.
+[bindings.kotlin]
+package_name = "com.syeyoung.assistant.core"
+
+[bindings.swift]
+module_name = "AssistantCore"
