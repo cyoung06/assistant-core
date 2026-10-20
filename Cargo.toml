@@ -1,0 +1,32 @@
+[package]
+name = "assistant_core"
+version = "0.1.0"
+edition = "2024"
+description = "Markdown, math and diagrams for the Assistant apps, drawn the same on every platform"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "staticlib", "rlib"]
+
+[dependencies]
+uniffi = { version = "0.32", features = ["cli"] }
+thiserror = "2"
+usvg = "0.45"
+ttf-parser = "0.25"
+ratex-parser = "0.1.15"
+ratex-layout = "0.1.15"
+ratex-types = "0.1.15"
+ratex-katex-fonts = "0.1.15"
+# Vendored (MIT) with one change: fonts supplied by the app instead of the system's (see vendor/README.md).
+mermaid-rs-renderer = { path = "vendor/mermaid-rs-renderer", default-features = false }
+
+[[bin]]
+name = "uniffi-bindgen"
+path = "uniffi-bindgen.rs"
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"
