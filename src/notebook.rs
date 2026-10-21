@@ -452,3 +452,59 @@ impl NotebookDoc {
         }
     }
 }
+
+/// What a blank page in [style] ("dots", "grid", "lines"; anything else is plain) of [width] by
+/// [height] points looks like, as PDF content: plain vector paths, so it stays exact at any zoom
+/// (a tiling pattern is drawn by repeating a pixel cell, and drifts against the ink). Dots and
+/// grid 17pt (6 mm) apart, lines 22pt.
+#[uniffi::export]
+pub fn blank_page(style: String, width: f32, height: f32) -> String {
+    const STEP: f32 = 17.0;
+    const LINE: f32 = 22.0;
+    const MARGIN: f32 = 28.0;
+    let n = |v: f32| format!("{v:.2}");
+    let mut out = String::new();
+    match style.as_str() {
+        "dots" => {
+            // Each dot a zero-length segment with a round cap: one stroked path for the page.
+            out.push_str("0.75 0.75 0.78 RG 1.4 w 1 J\n");
+            let mut y = MARGIN;
+            while y <= height - MARGIN + 0.01 {
+                let mut x = MARGIN;
+                while x <= width - MARGIN + 0.01 {
+                    out.push_str(&format!("{} {} m {} {} l\n", n(x), n(y), n(x), n(y)));
+                    x += STEP;
+                }
+                y += STEP;
+            }
+            out.push('S');
+        }
+        "grid" => {
+            let cols = ((width - 2.0 * MARGIN) / STEP) as i32;
+            let rows = ((height - 2.0 * MARGIN) / STEP) as i32;
+            let right = MARGIN + cols as f32 * STEP;
+            let top = MARGIN + rows as f32 * STEP;
+            out.push_str("0.85 0.85 0.88 RG 0.4 w\n");
+            for c in 0..=cols {
+                let x = MARGIN + c as f32 * STEP;
+                out.push_str(&format!("{} {} m {} {} l\n", n(x), n(MARGIN), n(x), n(top)));
+            }
+            for r in 0..=rows {
+                let y = MARGIN + r as f32 * STEP;
+                out.push_str(&format!("{} {} m {} {} l\n", n(MARGIN), n(y), n(right), n(y)));
+            }
+            out.push('S');
+        }
+        "lines" => {
+            out.push_str("0.8 0.82 0.88 RG 0.5 w\n");
+            let mut y = height - MARGIN * 2.2;
+            while y > MARGIN {
+                out.push_str(&format!("{} {} m {} {} l\n", n(MARGIN), n(y), n(width - MARGIN), n(y)));
+                y -= LINE;
+            }
+            out.push('S');
+        }
+        _ => {}
+    }
+    out
+}

@@ -118,3 +118,12 @@ fn a_saved_notebook_loads_as_it_was() {
     assert_eq!(reloaded.strokes(), tablet.strokes());
     assert_eq!(reloaded.pages(), tablet.pages());
 }
+
+#[test]
+fn blank_pages_draw_as_the_tablet_does() {
+    // The tablet's BlankPdf: a grid of 6 mm squares from a 28pt margin.
+    let grid = assistant_core::blank_page("grid".into(), 595.0, 842.0);
+    assert!(grid.starts_with("0.85 0.85 0.88 RG 0.4 w\n28.00 28.00 m 28.00 "));
+    assert!(grid.ends_with('S'));
+    assert_eq!(assistant_core::blank_page("plain".into(), 595.0, 842.0), "");
+}
