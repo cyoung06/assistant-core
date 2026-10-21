@@ -364,7 +364,7 @@ pub fn render_with_detailed_timing(
     input: &str,
     options: RenderOptions,
 ) -> anyhow::Result<RenderDetailedResult> {
-    use std::time::Instant;
+    use web_time::Instant; // Assistant: std's panics in browsers (wasm32).
 
     let t0 = Instant::now();
     let parsed = parse_mermaid(input)?;

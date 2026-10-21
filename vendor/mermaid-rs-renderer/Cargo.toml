@@ -186,3 +186,7 @@ version = "0.8"
 [profile.release]
 lto = true
 codegen-units = 1
+
+# Assistant: Instant that works in browsers (wasm32) too.
+[dependencies.web-time]
+version = "1"
