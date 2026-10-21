@@ -85,6 +85,8 @@ pub enum NotebookEdit {
     InsertPage { index: u32, page: NotebookPage },
     /// A page removed, with what's on it.
     RemovePage { id: String },
+    /// A page's entry put again where it is (what it shows changed; what's on it stays).
+    PutPage { page: NotebookPage },
     Bookmark { page: String, on: bool },
     /// The base PDF (its content hash).
     SetBase { blob: String },
@@ -333,6 +335,12 @@ impl Inner {
                     self.images.remove(txn, &k);
                 }
                 self.bookmarks.remove(txn, &id);
+            }
+            NotebookEdit::PutPage { page } => {
+                if let Some(i) = self.pages(txn).iter().position(|p| p.id == page.id) {
+                    self.pages.remove(txn, i as u32);
+                    self.pages.insert(txn, i as u32, page_value(&page));
+                }
             }
             NotebookEdit::Bookmark { page, on } => {
                 if on {

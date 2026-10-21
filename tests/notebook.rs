@@ -127,3 +127,13 @@ fn blank_pages_draw_as_the_tablet_does() {
     assert!(grid.ends_with('S'));
     assert_eq!(assistant_core::blank_page("plain".into(), 595.0, 842.0), "");
 }
+
+#[test]
+fn a_page_put_again_keeps_what_is_on_it() {
+    let (server, tablet, mac) = notebook();
+    pass(&server, &mac, tablet.edit(vec![NotebookEdit::PutStroke { stroke: stroke("a", "p2", None) }]));
+    let moved_in_base = NotebookPage { base: 0, ..page("p2", 1) };
+    pass(&server, &tablet, mac.edit(vec![NotebookEdit::PutPage { page: moved_in_base.clone() }]));
+    assert_eq!(tablet.pages()[1], moved_in_base);
+    assert_eq!(tablet.strokes().len(), 1);
+}
