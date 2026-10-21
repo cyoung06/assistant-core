@@ -11,6 +11,8 @@ mod fonts;
 mod markdown;
 mod math;
 mod style;
+#[cfg(feature = "web")]
+mod web;
 
 pub use diagram::render_mermaid;
 pub use drawing::{Drawing, Shape};

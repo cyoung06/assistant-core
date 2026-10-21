@@ -9,6 +9,7 @@ const PART: &AsciiSet = &NON_ALPHANUMERIC.remove(b'-').remove(b'.').remove(b'_')
 
 /// One change: [from]..[to] (UTF-16 units of the text before any change) becomes [insert].
 #[derive(Debug, Clone, PartialEq, uniffi::Record)]
+#[cfg_attr(feature = "web", derive(serde::Serialize), serde(rename_all = "camelCase"))]
 pub struct Replacement {
     pub from: u32,
     pub to: u32,
@@ -17,6 +18,7 @@ pub struct Replacement {
 
 /// Changes to make (each against the text before any of them), and the selection after them.
 #[derive(Debug, Clone, PartialEq, uniffi::Record)]
+#[cfg_attr(feature = "web", derive(serde::Serialize), serde(rename_all = "camelCase"))]
 pub struct Edit {
     pub changes: Vec<Replacement>,
     pub anchor: u32,
@@ -43,6 +45,7 @@ pub fn toggle_wrap(text: String, from: u32, to: u32, mark: String) -> Edit {
 
 /// Something the "/" menu inserts: [text], with the cursor at [cursor] (UTF-16 units into it).
 #[derive(Debug, Clone, PartialEq, uniffi::Record)]
+#[cfg_attr(feature = "web", derive(serde::Serialize), serde(rename_all = "camelCase"))]
 pub struct SlashItem {
     pub label: String,
     /// Other words it's found by.

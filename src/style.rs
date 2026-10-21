@@ -2,6 +2,7 @@
 /// Colours are ARGB; sizes are in CSS pixels (dp on Android, points on macOS), or in ems of the
 /// body text where they say so.
 #[derive(Debug, Clone, uniffi::Record)]
+#[cfg_attr(feature = "web", derive(serde::Serialize), serde(rename_all = "camelCase"))]
 pub struct NoteStyle {
     pub background: u32,
     pub text: u32,

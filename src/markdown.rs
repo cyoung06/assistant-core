@@ -3,6 +3,7 @@ use comrak::{Arena, Options, parse_document};
 
 /// What a span of a note is, as the editors show it (the web's live preview is the reference).
 #[derive(Debug, Clone, PartialEq, uniffi::Enum)]
+#[cfg_attr(feature = "web", derive(serde::Serialize), serde(tag = "kind", rename_all = "camelCase"))]
 pub enum Element {
     Heading { level: u8 },
     Emphasis,
@@ -35,6 +36,7 @@ pub enum Element {
 
 /// How a table column's cells are aligned.
 #[derive(Debug, Clone, Copy, PartialEq, uniffi::Enum)]
+#[cfg_attr(feature = "web", derive(serde::Serialize), serde(rename_all = "camelCase"))]
 pub enum Alignment {
     Left,
     Center,
@@ -43,6 +45,7 @@ pub enum Alignment {
 
 /// A range of the note in UTF-16 code units (what Android, macOS and the web index strings by).
 #[derive(Debug, Clone, Copy, PartialEq, uniffi::Record)]
+#[cfg_attr(feature = "web", derive(serde::Serialize), serde(rename_all = "camelCase"))]
 pub struct TextRange {
     pub from: u32,
     pub to: u32,
@@ -51,6 +54,7 @@ pub struct TextRange {
 /// An element over [range]; [marks] are its Markdown syntax, hidden (or replaced) while the
 /// cursor isn't in [range].
 #[derive(Debug, Clone, PartialEq, uniffi::Record)]
+#[cfg_attr(feature = "web", derive(serde::Serialize), serde(rename_all = "camelCase"))]
 pub struct Span {
     pub element: Element,
     pub range: TextRange,
