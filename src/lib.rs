@@ -11,6 +11,7 @@ mod fonts;
 mod markdown;
 mod math;
 mod style;
+mod sync;
 #[cfg(feature = "web")]
 mod web;
 
@@ -21,6 +22,7 @@ pub use fonts::register_font;
 pub use markdown::{Alignment, Element, Span, TextRange, markdown_spans};
 pub use math::render_math;
 pub use style::{NoteStyle, note_style};
+pub use sync::{Received, SyncDoc, SyncError, TextChange};
 
 #[derive(Debug, thiserror::Error, uniffi::Error)]
 pub enum RenderError {

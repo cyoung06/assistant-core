@@ -26,6 +26,7 @@ percent-encoding = "2"
 wasm-bindgen = { version = "0.2.129", optional = true }
 serde = { version = "1", features = ["derive"], optional = true }
 serde-wasm-bindgen = { version = "0.6.5", optional = true }
+yrs = { version = "0.28", features = ["sync"] }
 
 [features]
 web = ["dep:wasm-bindgen", "dep:serde", "dep:serde-wasm-bindgen"]
