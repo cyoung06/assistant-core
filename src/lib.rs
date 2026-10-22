@@ -7,11 +7,12 @@ uniffi::setup_scaffolding!();
 mod diagram;
 mod drawing;
 mod editing;
-mod export;
 mod fonts;
 mod markdown;
 mod math;
 mod notebook;
+#[cfg(feature = "print")]
+mod print;
 mod style;
 mod sync;
 #[cfg(feature = "web")]
@@ -19,12 +20,13 @@ mod web;
 
 pub use diagram::render_mermaid;
 pub use drawing::{Drawing, Shape};
-pub use export::note_html;
 pub use editing::{Edit, Replacement, SlashItem, link_path, pasted_name, relative_link, slash_items, toggle_wrap};
 pub use fonts::register_font;
 pub use markdown::{Alignment, Element, Span, TextRange, markdown_spans};
 pub use math::render_math;
 pub use style::{NoteStyle, note_style};
+#[cfg(feature = "print")]
+pub use print::{cover_pdf, note_images, note_pdf};
 pub use notebook::{blank_page, NotebookChange, NotebookDoc, NotebookEdit, NotebookImage, NotebookPage, NotebookReceived, NotebookStroke};
 pub use sync::{Received, SyncDoc, SyncError, TextChange};
 

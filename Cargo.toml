@@ -27,9 +27,14 @@ wasm-bindgen = { version = "0.2.129", optional = true }
 serde = { version = "1", features = ["derive"], optional = true }
 serde-wasm-bindgen = { version = "0.6.5", optional = true }
 yrs = { version = "0.28", features = ["sync"] }
+# The server's build (--features print): notes typeset into PDF pages, by Typst as a library.
+typst = { version = "0.15.1", optional = true }
+typst-pdf = { version = "0.15.1", optional = true }
+typst-layout = { version = "0.15.1", optional = true }
 
 [features]
 web = ["dep:wasm-bindgen", "dep:serde", "dep:serde-wasm-bindgen"]
+print = ["dep:typst", "dep:typst-pdf", "dep:typst-layout"]
 
 [[bin]]
 name = "uniffi-bindgen"
