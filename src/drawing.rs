@@ -8,6 +8,37 @@ pub struct Drawing {
     pub shapes: Vec<Shape>,
 }
 
+impl Drawing {
+    /// As an SVG document, [width] by [height] (CSS pixels).
+    pub fn svg(&self) -> String {
+        use std::fmt::Write;
+        let mut out = format!(r#"<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" viewBox="0 0 {w} {h}">"#, w = self.width, h = self.height);
+        for s in &self.shapes {
+            let mut path = String::new();
+            let mut p = s.points.iter();
+            let mut next = |n: usize| (0..n * 2).map(|_| p.next().copied().unwrap_or(0.0).to_string()).collect::<Vec<_>>().join(" ");
+            for verb in &s.verbs {
+                match verb {
+                    0 => _ = write!(path, "M{}", next(1)),
+                    1 => _ = write!(path, "L{}", next(1)),
+                    2 => _ = write!(path, "Q{}", next(2)),
+                    3 => _ = write!(path, "C{}", next(3)),
+                    _ => path.push('Z'),
+                }
+            }
+            let rgb = format!("#{:06x}", s.color & 0xff_ffff);
+            let alpha = (s.color >> 24) as f32 / 255.0;
+            if s.stroke_width > 0.0 {
+                _ = write!(out, r#"<path d="{path}" fill="none" stroke="{rgb}" stroke-opacity="{alpha}" stroke-width="{}"/>"#, s.stroke_width);
+            } else {
+                _ = write!(out, r#"<path d="{path}" fill="{rgb}" fill-opacity="{alpha}"/>"#);
+            }
+        }
+        out.push_str("</svg>");
+        out
+    }
+}
+
 /// A path, filled or stroked in one colour. [verbs] are 0 move, 1 line, 2 quadratic, 3 cubic,
 /// 4 close; [points] holds their points' x, y in order (1, 1, 2 and 3 points; none for close).
 #[derive(Debug, uniffi::Record)]

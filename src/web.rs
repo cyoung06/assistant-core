@@ -1,8 +1,6 @@
 //! The core for the web (wasm32, `--features web`): the same functions as the apps get, for
 //! JavaScript. Records come as plain objects (camelCase); drawings as SVG, which the browser paints.
 
-use std::fmt::Write;
-
 use wasm_bindgen::prelude::*;
 
 use crate::{Drawing, RenderError};
@@ -21,30 +19,7 @@ pub struct Svg {
 }
 
 fn svg(d: Drawing) -> Svg {
-    let mut out = format!(r#"<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" viewBox="0 0 {w} {h}">"#, w = d.width, h = d.height);
-    for s in &d.shapes {
-        let mut path = String::new();
-        let mut p = s.points.iter();
-        let mut next = |n: usize| (0..n * 2).map(|_| p.next().copied().unwrap_or(0.0).to_string()).collect::<Vec<_>>().join(" ");
-        for verb in &s.verbs {
-            match verb {
-                0 => _ = write!(path, "M{}", next(1)),
-                1 => _ = write!(path, "L{}", next(1)),
-                2 => _ = write!(path, "Q{}", next(2)),
-                3 => _ = write!(path, "C{}", next(3)),
-                _ => path.push('Z'),
-            }
-        }
-        let rgb = format!("#{:06x}", s.color & 0xff_ffff);
-        let alpha = (s.color >> 24) as f32 / 255.0;
-        if s.stroke_width > 0.0 {
-            _ = write!(out, r#"<path d="{path}" fill="none" stroke="{rgb}" stroke-opacity="{alpha}" stroke-width="{}"/>"#, s.stroke_width);
-        } else {
-            _ = write!(out, r#"<path d="{path}" fill="{rgb}" fill-opacity="{alpha}"/>"#);
-        }
-    }
-    out.push_str("</svg>");
-    Svg { svg: out, width: d.width, height: d.height, baseline: d.baseline }
+    Svg { svg: d.svg(), width: d.width, height: d.height, baseline: d.baseline }
 }
 
 fn drawn(result: Result<Drawing, RenderError>) -> Result<Svg, JsError> {
