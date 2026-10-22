@@ -136,9 +136,9 @@ fn encode_path(folder: &str) -> String {
     if parts.is_empty() { "/".into() } else { format!("/{}/", parts.join("/")) }
 }
 
-/// What a note in [folder] links to, in order, once each: web and app addresses as written, and
-/// links to drive files (relative, as notes write them) as `drive:<path>`. Links in code aren't
-/// links; images count (a note shows them).
+/// What a note in [folder] links to, in order, once each: web and app addresses as written, links to
+/// drive files (relative, as notes write them) as `drive:<path>`, and mentions as `mention:<name>`
+/// (resolved by whoever reads them). Links in code aren't links; images count (a note shows them).
 #[uniffi::export]
 pub fn note_links(text: String, folder: String) -> Vec<String> {
     use comrak::nodes::NodeValue;
@@ -165,7 +165,22 @@ pub fn note_links(text: String, folder: String) -> Vec<String> {
             out.push(target);
         }
     }
+    let at = crate::markdown::Offsets::new(&text);
+    for m in crate::markdown::mentions(&text, &crate::markdown::literal(root, &text, &at)) {
+        let target = format!("mention:{}", m.name);
+        if !out.contains(&target) {
+            out.push(target);
+        }
+    }
     out
+}
+
+/// How a mention of [name] is written: `@Name` when it's only letters, digits and `_ - . #` (not
+/// ending in `.` or `-`), `@[Name]` otherwise (a `]` in it can't be written, so it's left out).
+#[uniffi::export]
+pub fn mention_text(name: String) -> String {
+    let plain = !name.is_empty() && name.chars().all(|c| c.is_alphanumeric() || "_-.#".contains(c)) && !name.ends_with(['.', '-']);
+    if plain { format!("@{name}") } else { format!("@[{}]", name.replace(']', "").trim()) }
 }
 
 #[cfg(test)]
@@ -179,5 +194,15 @@ mod note_links_tests {
             note_links(text.into(), "Projects/P/Notes/".into()),
             vec!["https://assistant.example/task/abc", "drive:Projects/P/Course files/w1.pdf", "drive:Projects/P/Notes/img/p.png", "https://x.org"]
         );
+        assert_eq!(note_links("Ask @prof about @[HW 3], @HW3".into(), "".into()), vec!["mention:prof", "mention:HW 3", "mention:HW3"]);
+    }
+
+    #[test]
+    fn mentions_written_plain_or_bracketed() {
+        assert_eq!(mention_text("HW3".into()), "@HW3");
+        assert_eq!(mention_text("#12".into()), "@#12");
+        assert_eq!(mention_text("확률및통계".into()), "@확률및통계");
+        assert_eq!(mention_text("week 1 slides.pdf".into()), "@[week 1 slides.pdf]");
+        assert_eq!(mention_text("v2.".into()), "@[v2.]");
     }
 }

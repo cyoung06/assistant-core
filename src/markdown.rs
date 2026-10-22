@@ -32,6 +32,10 @@ pub enum Element {
     /// A GFM table: shown as a table when not being edited. [rows] are its cells' Markdown (the
     /// first row is the header), [alignments] each column's.
     Table { rows: Vec<Vec<String>>, alignments: Vec<Alignment> },
+    /// A mention, `@Name` or `@[Name with spaces]`: a task, event, project, note or file, by its
+    /// name (see [crate::mention_text]); shown as a link when not being edited. Its marks are the
+    /// `@` (and the brackets).
+    Mention { name: String },
 }
 
 /// How a table column's cells are aligned.
@@ -80,17 +84,108 @@ pub fn markdown_spans(text: String) -> Vec<Span> {
             spans.push(span);
         }
     }
+    for m in mentions(&text, &literal(root, &text, &at)) {
+        let marks = if m.bracketed { vec![at.range(m.from, m.from + 2), at.range(m.to - 1, m.to)] } else { vec![at.range(m.from, m.from + 1)] };
+        spans.push(Span { element: Element::Mention { name: m.name }, range: at.range(m.from, m.to), marks });
+    }
+    spans.sort_by_key(|s| s.range.from);
     spans
 }
 
+/// A mention found in a note's text: its bytes [from, to), and the name in it.
+pub(crate) struct Mention {
+    pub from: usize,
+    pub to: usize,
+    pub name: String,
+    pub bracketed: bool,
+}
+
+/// The bytes where an `@` isn't a mention: code, links, images, math, HTML.
+pub(crate) fn literal<'a>(root: &'a AstNode<'a>, text: &str, at: &Offsets) -> Vec<(usize, usize)> {
+    root.descendants()
+        .filter(|n| {
+            matches!(
+                n.data.borrow().value,
+                NodeValue::Code(_) | NodeValue::CodeBlock(_) | NodeValue::Link(_) | NodeValue::Image(_) | NodeValue::Math(_) | NodeValue::HtmlInline(_) | NodeValue::HtmlBlock(_)
+            )
+        })
+        .map(|n| at.bytes(text, &n.data.borrow().sourcepos))
+        .collect()
+}
+
+/// The mentions in [text] outside [literal]: `@[Name]`, or `@Name` (letters, digits, `_ - . #`; a
+/// sentence's last `.` not part of it). An `@` right after a letter, digit or `._%+-` is an
+/// address's (mail), not a mention.
+pub(crate) fn mentions(text: &str, literal: &[(usize, usize)]) -> Vec<Mention> {
+    let mut out = Vec::new();
+    let mut prev: Option<char> = None;
+    let mut skip_to = 0;
+    for (i, c) in text.char_indices() {
+        let before = prev;
+        prev = Some(c);
+        if c != '@' || i < skip_to || before.is_some_and(|p| p.is_alphanumeric() || "._%+-".contains(p)) {
+            continue;
+        }
+        if literal.iter().any(|&(a, b)| i >= a && i < b) {
+            continue;
+        }
+        let rest = &text[i + 1..];
+        let found = if let Some(inner) = rest.strip_prefix('[') {
+            inner.find(|ch| ch == ']' || ch == '\n').filter(|&e| inner[e..].starts_with(']')).and_then(|e| {
+                let name = inner[..e].trim();
+                (!name.is_empty()).then(|| Mention { from: i, to: i + 3 + e, name: name.to_string(), bracketed: true })
+            })
+        } else {
+            let mut end = rest.char_indices().find(|&(_, ch)| !(ch.is_alphanumeric() || "_-.#".contains(ch))).map_or(rest.len(), |(e, _)| e);
+            while end > 0 && rest[..end].ends_with(['.', '-']) {
+                end -= 1;
+            }
+            (end > 0).then(|| Mention { from: i, to: i + 1 + end, name: rest[..end].to_string(), bracketed: false })
+        };
+        if let Some(m) = found {
+            skip_to = m.to;
+            out.push(m);
+        }
+    }
+    out
+}
+
+#[cfg(test)]
+mod mention_tests {
+    use super::*;
+
+    fn names(text: &str) -> Vec<String> {
+        markdown_spans(text.into()).into_iter().filter_map(|s| if let Element::Mention { name } = s.element { Some(name) } else { None }).collect()
+    }
+
+    #[test]
+    fn mentions_are_names_after_an_at() {
+        assert_eq!(names("See @HW3. Then @[week 1 slides.pdf], and @#12-"), vec!["HW3", "week 1 slides.pdf", "#12"]);
+        assert_eq!(names("확률 숙제 @[확률및통계 HW 3]!"), vec!["확률및통계 HW 3"]);
+    }
+
+    #[test]
+    fn not_in_mail_code_or_links() {
+        assert_eq!(names("me@postech.ac.kr `@code` [@link](https://x.org/@a) $@x$\n\n```\n@block\n```\n"), Vec::<String>::new());
+        assert_eq!(names("@[unclosed\n] @ alone"), Vec::<String>::new());
+    }
+
+    #[test]
+    fn marks_are_the_at_and_brackets() {
+        let s = markdown_spans("a @[b c] d".into()).into_iter().find(|s| matches!(s.element, Element::Mention { .. })).unwrap();
+        assert_eq!((s.range.from, s.range.to), (2, 8));
+        assert_eq!(s.marks.iter().map(|m| (m.from, m.to)).collect::<Vec<_>>(), vec![(2, 4), (7, 8)]);
+    }
+}
+
 /// Where each line starts (bytes), and each byte's place in UTF-16.
-struct Offsets {
+pub(crate) struct Offsets {
     lines: Vec<usize>,
     utf16: Vec<u32>,
 }
 
 impl Offsets {
-    fn new(text: &str) -> Self {
+    pub(crate) fn new(text: &str) -> Self {
         let mut lines = vec![0];
         let mut utf16 = vec![0u32; text.len() + 1];
         let mut u = 0u32;
@@ -112,7 +207,7 @@ impl Offsets {
     }
 
     /// A node's bytes, [start, end): comrak's end is its last byte, inclusive.
-    fn bytes(&self, text: &str, pos: &Sourcepos) -> (usize, usize) {
+    pub(crate) fn bytes(&self, text: &str, pos: &Sourcepos) -> (usize, usize) {
         let start = self.byte(pos.start.line, pos.start.column);
         let mut end = (self.byte(pos.end.line, pos.end.column) + 1).min(text.len());
         while !text.is_char_boundary(end) {

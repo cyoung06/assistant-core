@@ -66,6 +66,11 @@ pub fn link_path(folder: String, href: String) -> Option<String> {
     crate::link_path(folder, href)
 }
 
+#[wasm_bindgen(js_name = mentionText)]
+pub fn mention_text(name: String) -> String {
+    crate::mention_text(name)
+}
+
 #[wasm_bindgen(js_name = relativeLink)]
 pub fn relative_link(folder: String, path: String) -> String {
     crate::relative_link(folder, path)
