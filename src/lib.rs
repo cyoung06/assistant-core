@@ -20,7 +20,7 @@ mod web;
 
 pub use diagram::render_mermaid;
 pub use drawing::{Drawing, Shape};
-pub use editing::{Edit, Replacement, SlashItem, link_path, pasted_name, relative_link, slash_items, toggle_wrap};
+pub use editing::{Edit, Replacement, SlashItem, link_path, note_links, pasted_name, relative_link, slash_items, toggle_wrap};
 pub use fonts::register_font;
 pub use markdown::{Alignment, Element, Span, TextRange, markdown_spans};
 pub use math::render_math;

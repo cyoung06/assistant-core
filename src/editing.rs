@@ -135,3 +135,49 @@ fn encode_path(folder: &str) -> String {
     let parts: Vec<String> = folder.split('/').filter(|p| !p.is_empty()).map(|p| utf8_percent_encode(p, PART).to_string()).collect();
     if parts.is_empty() { "/".into() } else { format!("/{}/", parts.join("/")) }
 }
+
+/// What a note in [folder] links to, in order, once each: web and app addresses as written, and
+/// links to drive files (relative, as notes write them) as `drive:<path>`. Links in code aren't
+/// links; images count (a note shows them).
+#[uniffi::export]
+pub fn note_links(text: String, folder: String) -> Vec<String> {
+    use comrak::nodes::NodeValue;
+    let mut options = comrak::Options::default();
+    options.extension.autolink = true;
+    options.extension.table = true;
+    options.extension.tasklist = true;
+    options.extension.strikethrough = true;
+    options.extension.math_dollars = true;
+    let arena = comrak::Arena::new();
+    let root = comrak::parse_document(&arena, &text, &options);
+    let mut out: Vec<String> = Vec::new();
+    for node in root.descendants() {
+        let url = match &node.data.borrow().value {
+            NodeValue::Link(l) | NodeValue::Image(l) => l.url.clone(),
+            _ => continue,
+        };
+        let target = match link_path(folder.clone(), url.clone()) {
+            Some(path) => format!("drive:{path}"),
+            None if url.starts_with('#') || url.is_empty() => continue,
+            None => url,
+        };
+        if !out.contains(&target) {
+            out.push(target);
+        }
+    }
+    out
+}
+
+#[cfg(test)]
+mod note_links_tests {
+    use super::*;
+
+    #[test]
+    fn links_in_a_note() {
+        let text = "See [HW3](https://assistant.example/task/abc) and [slides](../Course%20files/w1.pdf), ![plot](img/p.png)\n\n`[not](a.md)`\n\n```\n[nor](b.md)\n```\n\n<https://x.org> [again](https://assistant.example/task/abc) [top](#a)";
+        assert_eq!(
+            note_links(text.into(), "Projects/P/Notes/".into()),
+            vec!["https://assistant.example/task/abc", "drive:Projects/P/Course files/w1.pdf", "drive:Projects/P/Notes/img/p.png", "https://x.org"]
+        );
+    }
+}
